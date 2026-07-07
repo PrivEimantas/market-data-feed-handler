@@ -58,12 +58,20 @@ uint64_t now_ns_since_midnight() {
 // we need const char* because strings are literal and so you pass a memory ref to first value (char)
 // const just means we promise not to modify it (others can then see when looking at function)
 // lets you pass in string literals (which live in ROM)
+
+
+//** Pretends to be an exchange in real life, NASDAQ matching engine makes a
+// Add Order ITCH message every time a new limit order enters the book.
+// E.G: stock_locate=1, order_ref=<counter>, side='B'/'S', shares=100, ticker="TEST", price=<jittered>
+// then  turns into exact 36 raw byte NASDAQ's wire format specifies, then handled to make_mold_packet
+// then send over UDP
 std::vector<uint8_t> make_add_order(uint16_t stock_locate, uint64_t order_ref,
                                      char side, uint32_t shares,
                                      const char* stock, uint32_t price) {
-    std::vector<uint8_t> buf(36, 0);
+    std::vector<uint8_t> buf(36, 0); //sets all 36 vector elements to 0
     buf[0] = 'A';
-    write_be16(&buf[1], stock_locate);
+    // Stock locate is passed as 16 bit number but buf only stores 8 bit chunks
+    write_be16(&buf[1], stock_locate); // ticker represented as an int, its a mapping to an instrument
     write_be16(&buf[3], 0);                 // tracking number - unused here
     write_be48(&buf[5], now_ns_since_midnight());
     write_be64(&buf[11], order_ref);

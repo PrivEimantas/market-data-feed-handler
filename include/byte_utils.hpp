@@ -32,10 +32,13 @@ inline uint64_t read_be48(const uint8_t* p) {
     for (int i = 0; i < 6; ++i) v = (v << 8) | p[i];
     return v;
 }
-
+// We pass in an address of a container for an array
+// but we can just move to the next address p[1] would just be buf[2] if you passed in buf[1]
+// we store the high and low byte from a 16 bit integer essentially at buf[1] and buf[2]
+// compiler handles how much to offset by so will work for other data types
 inline void write_be16(uint8_t* p, uint16_t v) {
-    p[0] = static_cast<uint8_t>(v >> 8);
-    p[1] = static_cast<uint8_t>(v);
+    p[0] = static_cast<uint8_t>(v >> 8); // keeps first 8 bits essentially
+    p[1] = static_cast<uint8_t>(v); // keep last 8 as we chop off first 8 bits
 }
 
 inline void write_be32(uint8_t* p, uint32_t v) {
