@@ -27,7 +27,7 @@ struct Header {
 
 inline Header parse_header(const uint8_t* p) {
     Header h;
-    h.session.assign(reinterpret_cast<const char*>(p), 10);
+    h.session.assign(reinterpret_cast<const char*>(p), 10); // read 10 bytes starting at p and store as string
     h.sequence_number = read_be64(p + 10);
     h.message_count = read_be16(p + 18);
     return h;
@@ -45,16 +45,29 @@ struct MessageBlock {
 // Each block is: 2-byte big-endian length prefix + that many bytes of ITCH message.
 // Returns false (and stops early) if the packet is malformed / truncated -
 // callers should treat that as a corrupt packet, not a sequence gap.
+
+
+
+/**
+ * Packet: ptr to start of UDP packet
+ * packet_len: allows to know where packet ends
+ * header: so we know how many blocks to expect and other info
+ * out: write to this
+ */
+
+ // we write to messageblocks whilst at the same time returning a value to know if the format of our received packets is correct
 inline bool parse_blocks(const uint8_t* packet, size_t packet_len,
                           const Header& header, std::vector<MessageBlock>& out) {
     out.clear();
-    size_t offset = kHeaderSize;
-    uint64_t seq = header.sequence_number;
+    size_t offset = kHeaderSize; // 20 starts reading after 20 byte header, first message block
+    uint64_t seq = header.sequence_number; // our sequence
 
-    for (uint16_t i = 0; i < header.message_count; ++i) {
-        if (offset + 2 > packet_len) return false; // truncated length prefix
-        uint16_t len = read_be16(packet + offset);
-        offset += 2;
+    for (uint16_t i = 0; i < header.message_count; ++i) { // run for each block
+
+        if (offset + 2 > packet_len) return false; // out of bounds must be malformed, first 2 values are length
+
+        uint16_t len = read_be16(packet + offset); // starts at 20 first time , read length prefix. read 2 bytes aka length of packet. basically at packet[20]. we move over by a byte  as the ptr is of 8 bits
+        offset += 2; //each msg in packet is structured as 2-byte length prefix
         if (offset + len > packet_len) return false; // truncated payload
         out.push_back(MessageBlock{seq, packet + offset, len});
         offset += len;
@@ -64,14 +77,16 @@ inline bool parse_blocks(const uint8_t* packet, size_t packet_len,
 }
 
 // Tracks expected sequence number across packets and reports gaps.
-// This is the whole gap-detection story for your feed handler - the
-// interesting part isn't the arithmetic, it's what you do when a gap
-// fires (log + wait for a reset, or request retransmission).
 class SequenceTracker {
 public:
     // Returns the number of missed messages (0 if none, i.e. in order).
     // Call once per *message block* you process, not once per packet.
+
+
+    
     int64_t on_sequence(uint64_t seq) {
+
+        //handle the first time this is called, only valid for the first sequence number
         if (!have_seen_any_) {
             have_seen_any_ = true;
             expected_ = seq + 1;

@@ -38,7 +38,7 @@ inline uint64_t read_be48(const uint8_t* p) {
 // compiler handles how much to offset by so will work for other data types
 inline void write_be16(uint8_t* p, uint16_t v) {
     p[0] = static_cast<uint8_t>(v >> 8); // keeps first 8 bits essentially
-    p[1] = static_cast<uint8_t>(v); // keep last 8 as we chop off first 8 bits
+    p[1] = static_cast<uint8_t>(v); // keep last 8 as we chop off first 8 bits, anything moved over the right past the last element is removed
 }
 
 inline void write_be32(uint8_t* p, uint32_t v) {
