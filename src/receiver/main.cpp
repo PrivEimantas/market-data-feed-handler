@@ -35,19 +35,22 @@ switch (side) {
 
 // Placeholder consumer. Swap this for ring_buffer.push(msg) once you wire
 // this into the order book project.
-void on_message(const itch::Message& msg) {
+void on_message(const itch::Message& msg, OrderBook& book) {
     std::visit([](const auto& m) {
         using T = std::decay_t<decltype(m)>;
+
+        
+
         if constexpr (std::is_same_v<T, itch::AddOrder>) {
 
             Order orderToExecute{};
-            orderToExecute.id = m.order_ref;
+            orderToExecute.id = static_cast<int64_t>(m.order_ref);
             orderToExecute.side = itch_side_to_side(m.side); //turn to enum first
             orderToExecute.price = m.price;
             orderToExecute.quantity = static_cast<int64_t>(m.shares); 
             orderToExecute.timestamp = std::chrono::high_resolution_clock::now();
 
-            OrderBook.addOrder(orderToExecute);
+            book.addOrder(orderToExecute);
 
 
         } else if constexpr (std::is_same_v<T, itch::OrderDelete>) {
@@ -72,6 +75,8 @@ int main(int argc, char** argv) {
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) { std::perror("socket"); return 1; }
+
+    OrderBook book; 
 
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
