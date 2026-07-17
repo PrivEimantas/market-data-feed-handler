@@ -15,6 +15,7 @@
 #include <variant>
 #include <vector>
 
+#include "order-book/OrderBook.h"
 #include "itch_messages.hpp"
 #include "moldudp64.hpp"
 
@@ -22,16 +23,33 @@ using namespace feed;
 
 namespace {
 
+
+Side itch_side_to_side(char side) {
+switch (side) {
+    case 'B': return Side::Buy;
+    case 'S': return Side::Sell;
+    default:
+        throw std::invalid_argument("unexpected side character in ITCH message");
+    }
+}
+
 // Placeholder consumer. Swap this for ring_buffer.push(msg) once you wire
 // this into the order book project.
 void on_message(const itch::Message& msg) {
     std::visit([](const auto& m) {
         using T = std::decay_t<decltype(m)>;
         if constexpr (std::is_same_v<T, itch::AddOrder>) {
-            std::cout << "  ADD  ref=" << m.order_ref
-                      << " side=" << m.side
-                      << " shares=" << m.shares
-                      << " price=" << (m.price / 10000.0) << "\n";
+
+            Order orderToExecute{};
+            orderToExecute.id = m.order_ref;
+            orderToExecute.side = itch_side_to_side(m.side); //turn to enum first
+            orderToExecute.price = m.price;
+            orderToExecute.quantity = static_cast<int64_t>(m.shares); 
+            orderToExecute.timestamp = std::chrono::high_resolution_clock::now();
+
+            OrderBook.addOrder(orderToExecute);
+
+
         } else if constexpr (std::is_same_v<T, itch::OrderDelete>) {
             std::cout << "  DEL  ref=" << m.order_ref << "\n";
         } else if constexpr (std::is_same_v<T, itch::OrderCancel>) {

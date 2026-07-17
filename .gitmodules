@@ -1,0 +1,3 @@
+[submodule "external/order-book"]
+	path = external/order-book
+	url = https://github.com/PrivEimantas/order-book
