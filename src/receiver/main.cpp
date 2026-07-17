@@ -15,7 +15,7 @@
 #include <variant>
 #include <vector>
 
-#include "external/order-book/OrderBook.h"
+#include "external/order-book/order-book/OrderBook.h"
 #include "itch_messages.hpp"
 #include "moldudp64.hpp"
 
@@ -72,6 +72,8 @@ void on_message(const itch::Message& msg, OrderBook& book) {
         }
     }, msg);
 }
+
+} //namespace
 
 int main(int argc, char** argv) {
     uint16_t port = 30001;
@@ -145,7 +147,7 @@ int main(int argc, char** argv) {
             auto parsed = itch::parse_message(block.data, block.length);
             if (!parsed) continue; // unhandled message type, e.g. non-book types
             ++messages_seen;
-            on_message(*parsed); //just prints for now
+            on_message(*parsed,book); 
         }
 
         if (packets_seen % 100 == 0) {
@@ -157,5 +159,7 @@ int main(int argc, char** argv) {
 
     close(sock);
     return 0;
-    
+
 }
+
+
