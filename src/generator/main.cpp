@@ -69,7 +69,7 @@ std::vector<uint8_t> make_add_order(uint16_t stock_locate, uint64_t order_ref,
                                      char side, uint32_t shares,
                                      const char* stock, uint32_t price) {
     std::vector<uint8_t> buf(36, 0); //sets all 36 vector elements to 0, this is speciifclaly for NASDAQ ITCH
-    buf[0] = 'A';
+    buf[0] = 'A'; //this is our 'type' that decides if we are building an 'Add Order message'
     // Stock locate is passed as 16 bit number but buf only stores 8 bit chunks
     write_be16(&buf[1], stock_locate); // ticker represented as an int, its a mapping to an instrument
     write_be16(&buf[3], 0);                 // tracking number - unused here

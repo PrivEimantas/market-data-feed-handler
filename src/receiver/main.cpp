@@ -36,38 +36,42 @@ switch (side) {
 // Placeholder consumer. Swap this for ring_buffer.push(msg) once you wire
 // this into the order book project.
 void on_message(const itch::Message& msg, OrderBook& book) {
-    std::visit([](const auto& m) {
+    std::visit([&book](const auto& m) {
         using T = std::decay_t<decltype(m)>;
 
-        
-
         if constexpr (std::is_same_v<T, itch::AddOrder>) {
-
             Order orderToExecute{};
             orderToExecute.id = static_cast<int64_t>(m.order_ref);
-            orderToExecute.side = itch_side_to_side(m.side); //turn to enum first
-            orderToExecute.price = m.price;
-            orderToExecute.quantity = static_cast<int64_t>(m.shares); 
+            orderToExecute.side = itch_side_to_side(m.side);
+            orderToExecute.price = static_cast<int64_t>(m.price);
+            orderToExecute.quantity = static_cast<int64_t>(m.shares);
             orderToExecute.timestamp = std::chrono::high_resolution_clock::now();
 
             book.addOrder(orderToExecute);
 
-
         } else if constexpr (std::is_same_v<T, itch::OrderDelete>) {
-            std::cout << "  DEL  ref=" << m.order_ref << "\n";
+            // 'D' - full removal of a resting order.
+            book.cancelOrder(static_cast<int64_t>(m.order_ref));
+
         } else if constexpr (std::is_same_v<T, itch::OrderCancel>) {
-            std::cout << "  CXL  ref=" << m.order_ref
-                      << " shares=" << m.cancelled_shares << "\n";
+            // 'X' - PARTIAL cancel: reduce remaining quantity, don't remove outright.
+            book.reduceOrder(static_cast<int64_t>(m.order_ref),
+                              static_cast<int64_t>(m.cancelled_shares));
+
         } else if constexpr (std::is_same_v<T, itch::OrderExecuted>) {
-            std::cout << "  EXEC ref=" << m.order_ref
-                      << " shares=" << m.executed_shares << "\n";
+            book.reduceOrder(static_cast<int64_t>(m.order_ref),
+                              static_cast<int64_t>(m.executed_shares));
+
+        } else if constexpr (std::is_same_v<T, itch::OrderExecutedWithPrice>) {
+            book.reduceOrder(static_cast<int64_t>(m.order_ref),
+                              static_cast<int64_t>(m.executed_shares));
+
         } else {
-            std::cout << "  (other message type)\n";
+            // OrderReplace ('U') and Trade ('P') aren't wired yet - known gap.
+            std::cout << "  (unhandled message type)\n";
         }
     }, msg);
 }
-
-} // namespace
 
 int main(int argc, char** argv) {
     uint16_t port = 30001;

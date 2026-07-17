@@ -80,7 +80,7 @@ struct Trade {                 // 'P' (44 bytes) - non-cross execution against a
     uint32_t price;
     uint64_t match_number;
 };
-
+// using a type-safe union which holds many types together at once, we define a type Message here which means it can be of any of these values
 using Message = std::variant<AddOrder, OrderExecuted, OrderExecutedWithPrice,
                               OrderCancel, OrderDelete, OrderReplace, Trade>;
 
