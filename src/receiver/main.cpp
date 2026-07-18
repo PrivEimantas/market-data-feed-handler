@@ -154,6 +154,7 @@ int main(int argc, char** argv) {
             std::cout << "-- stats: packets=" << packets_seen
                       << " messages=" << messages_seen
                       << " gaps=" << gaps_detected << " --\n";
+        // book.printBook();
         }
     }
 
