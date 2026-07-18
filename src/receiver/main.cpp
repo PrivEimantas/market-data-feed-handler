@@ -43,7 +43,7 @@ void on_message(const itch::Message& msg, OrderBook& book) {
             Order orderToExecute{};
             orderToExecute.id = static_cast<int64_t>(m.order_ref);
             orderToExecute.side = itch_side_to_side(m.side);
-            orderToExecute.price = static_cast<int64_t>(m.price);
+            orderToExecute.price = static_cast<int64_t>(m.price / 100);
             orderToExecute.quantity = static_cast<int64_t>(m.shares);
             orderToExecute.timestamp = std::chrono::high_resolution_clock::now();
 
